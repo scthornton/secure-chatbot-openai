@@ -4,11 +4,14 @@ A command-line chatbot that integrates Palo Alto Networks AI Runtime Security fo
 
 ## Features
 
-- ✅ Real-time security scanning before LLM processing
+- ✅ **Two-way security scanning** (input + output)
+- ✅ Real-time prompt scanning before LLM processing
+- ✅ AI response scanning before user display
 - ✅ Prompt injection detection and blocking
-- ✅ Malicious code detection in responses
-- ✅ URL security scanning
+- ✅ Data leakage prevention (PII, credentials, internal info)
+- ✅ Malicious code/URL detection in responses
 - ✅ Toxic content filtering
+- ✅ DLP policy enforcement on input and output
 - ✅ Native OpenAI API support (GPT-4o, GPT-4, GPT-3.5-turbo)
 
 ## Quick Start
@@ -61,19 +64,24 @@ python3 secure_chatbot.py
 ## How It Works
 
 ```
-User Input → Security Scan → LLM Processing → Response
-              ↓
-           If malicious: Block
-           If benign: Allow
+User Input → Input Scan → LLM Processing → Output Scan → User
+              ↓                              ↓
+           Block if malicious            Block if malicious
+           Allow if benign               Allow if benign
 ```
 
-### Security Workflow
+### Security Workflow (Two-Way Scanning)
 
-1. User enters a message
-2. Message is scanned by AI Runtime Security API
-3. If malicious content is detected, message is blocked
-4. If message is benign, it's sent to OpenAI for processing
-5. Response is returned to user
+1. **User enters a message**
+2. **INPUT SCAN:** Message is scanned by AI Runtime Security API
+3. **If malicious:** Message is blocked, user is notified
+4. **If benign:** Message is forwarded to OpenAI for processing
+5. **OpenAI generates response**
+6. **OUTPUT SCAN:** AI response is scanned by AI Runtime Security API
+7. **If malicious:** Response is blocked (prevents data leakage, malicious content)
+8. **If benign:** Response is displayed to user
+
+**Key Benefit:** Two-way scanning prevents both malicious inputs AND malicious outputs
 
 ### Example Session
 

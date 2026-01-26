@@ -2,10 +2,15 @@
 """
 SECURE AI CHATBOT WITH PALO ALTO NETWORKS AI RUNTIME SECURITY SCANNING
 
-This script creates a chatbot that scans user prompts for security threats
-BEFORE sending them to OpenAI for processing.
+This script creates a chatbot that scans BOTH user prompts AND AI responses
+for security threats using Palo Alto Networks AI Runtime Security API.
 
-WORKFLOW: User Input → Security Scan → AI Processing → Response
+WORKFLOW: User Input → Scan Input → AI Processing → Scan Output → User
+
+SECURITY FEATURES:
+- Input scanning: Blocks malicious prompts before LLM processing
+- Output scanning: Validates AI responses before displaying to user
+- Prevents data leakage, malicious code, and policy violations
 
 Modified for native OpenAI API (not Azure)
 """
@@ -199,14 +204,23 @@ def main():
     1. Validates required environment variables and credentials
     2. Initializes OpenAI client
     3. Runs the interactive chat loop
-    4. Processes each message through security scanning
+    4. Processes each message through INPUT security scanning
     5. Forwards approved messages to OpenAI for response generation
+    6. Scans AI-generated responses through OUTPUT security scanning
+    7. Displays only approved responses to the user
 
-    SECURITY ARCHITECTURE:
-    - All user inputs are scanned before AI processing
-    - Messages classified as malicious are blocked
-    - Only benign messages proceed to AI generation
+    SECURITY ARCHITECTURE (TWO-WAY SCANNING):
+    - INPUT SCAN: All user prompts are scanned before AI processing
+    - OUTPUT SCAN: All AI responses are scanned before user display
+    - Messages classified as malicious are blocked at both stages
+    - Only benign content proceeds through the pipeline
     - No conversation history is maintained for security reasons
+
+    SECURITY BENEFITS:
+    - Prevents malicious prompts from reaching the AI
+    - Prevents data leakage in AI responses (PII, credentials)
+    - Blocks malicious code/URLs in AI-generated content
+    - Enforces DLP policies on both input and output
     """
 
     print("🚀 INITIALIZING SECURE AI CHATBOT")
@@ -370,12 +384,68 @@ def main():
                         # Extract the generated response text
                         ai_response = response.choices[0].message.content
 
-                        # Display the AI-generated response
-                        print("\n" + "=" * 60)
-                        print("🤖 AI RESPONSE:")
-                        print("=" * 60)
-                        print(ai_response)
-                        print("=" * 60)
+                        # RESPONSE SECURITY SCANNING PHASE
+                        print("\n🔒 RESPONSE SECURITY SCANNING PHASE")
+                        print("=" * 50)
+                        print("Scanning AI-generated response for security threats...")
+
+                        # Scan the AI response for malicious content
+                        response_scan_result = scan_prompt_with_paloalto_api(
+                            ai_response, pan_api_key, pan_ai_profile_name)
+
+                        if response_scan_result:
+                            response_category = response_scan_result.get('category')
+                            response_action = response_scan_result.get('action')
+
+                            print(f"\n🚦 RESPONSE SECURITY ASSESSMENT:")
+                            print(f"   Classification: {response_category}")
+                            print(f"   Recommended Action: {response_action}")
+
+                            if response_category == "malicious" or response_action == "block":
+                                # RESPONSE BLOCKED - Security threat in AI output
+                                print("\n🚫 AI RESPONSE BLOCKED BY SECURITY")
+                                print("=" * 60)
+                                print(f"Security Status: {response_category.upper()}")
+                                print(f"Action Taken: {response_action.upper()}")
+                                print("\n🤖 Response: The AI generated a response that violates")
+                                print("   security policies and has been blocked. This may indicate:")
+                                print("   • Data leakage (PII, credentials, internal information)")
+                                print("   • Malicious code or URLs in the response")
+                                print("   • Policy violations detected by DLP rules")
+                                print("   • Toxic or harmful content")
+                                print("\n   Please rephrase your question or contact security.")
+                                print("=" * 60)
+
+                            elif response_category == "benign" and response_action == "allow":
+                                # RESPONSE APPROVED - Safe to display
+                                print("\n✅ RESPONSE SECURITY CHECK PASSED")
+                                print("=" * 40)
+                                print(f"Security Status: {response_category.upper()}")
+                                print(f"Action: {response_action.upper()}")
+                                print("Response approved for delivery...")
+                                print("=" * 40)
+
+                                # Display the AI-generated response
+                                print("\n" + "=" * 60)
+                                print("🤖 AI RESPONSE:")
+                                print("=" * 60)
+                                print(ai_response)
+                                print("=" * 60)
+
+                            else:
+                                # UNEXPECTED RESPONSE SCAN RESULT
+                                print(f"\n⚠️  UNEXPECTED RESPONSE SECURITY RESULT")
+                                print(f"   Category: {response_category}")
+                                print(f"   Action: {response_action}")
+                                print("🤖 Response: Received an unexpected security assessment")
+                                print("   for the AI response. Blocking as a precaution.")
+
+                        else:
+                            # RESPONSE SCAN FAILURE
+                            print("\n❌ RESPONSE SECURITY SCAN FAILED")
+                            print("🤖 Response: Unable to verify the safety of the AI response.")
+                            print("   Blocking as a precaution. Please check your")
+                            print("   Palo Alto Networks API configuration.")
 
                     except Exception as openai_err:
                         # Handle OpenAI processing errors
