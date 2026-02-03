@@ -102,10 +102,7 @@ The capital of France is Paris.
 
 ## Supported Models
 
-- `gpt-4o` (recommended)
-- `gpt-4-turbo`
-- `gpt-4`
-- `gpt-3.5-turbo`
+https://platform.openai.com/docs/models
 
 ## Security Features
 
@@ -150,15 +147,6 @@ Install missing dependencies:
 ```bash
 pip install -r requirements.txt
 ```
-
-## Cost Estimates
-
-**OpenAI API:**
-- GPT-3.5-turbo: ~$0.001 per message
-- GPT-4o: ~$0.01 per message
-
-**Runtime Security:**
-- Depends on your subscription plan
 
 ## Architecture
 
